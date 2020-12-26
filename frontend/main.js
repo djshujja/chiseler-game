@@ -2,19 +2,39 @@ const BG_COLOR = "#231f20";
 const PLAYER_COLOR = "#c2c2c2";
 
 const gameScreen = document.getElementById("gameScreen");
-
-let canvas, ctx;
-
+const initialScreen = document.getElementById("initialScreen");
+const newGameBtn = document.getElementById("newGameButton");
+const joinGameBtn = document.getElementById("joinGameButton");
+const gameCodeInput = document.getElementById("gameCodeInput");
+const gameCodeDisplay = document.getElementById("gameCodeDisplay");
 const socket = io("http://localhost:3000/");
+let canvas, ctx;
+let playerNumber;
+
+newGameBtn.addEventListener("click", newGame);
+joinGameBtn.addEventListener("click", joinGame);
 
 socket.on("init", handleInit);
 socket.on("gameState", handleGameState);
+socket.on("gameCode", handleGameCode);
 
-function handleInit(msg) {
-  console.log(msg);
+function newGame() {
+  socket.emit("newGameNow");
+  init();
+}
+
+function joinGame() {
+  const code = gameCodeInput.value;
+  socket.emit("joinGame", code);
+  init();
+}
+function handleInit(number) {
+  playerNumber = number;
 }
 
 function init() {
+  initialScreen.style.display = "none";
+  gameScreen.style.display = "block";
   canvas = document.getElementById("canvas");
   ctx = canvas.getContext("2d");
 
@@ -45,32 +65,8 @@ let gameState = {
 };
 
 function keydown(e) {
-  // switch (e.keyCode) {
-  //   case 38: {
-  //     gameState.player.body.y += -1;
-  //     break;
-  //   }
-  //   case 40: {
-  //     //down
-  //     gameState.player.body.y += 1;
-  //     break;
-  //   }
-  //   case 37: {
-  //     //left
-  //     gameState.player.body.x += -1;
-  //     break;
-  //   }
-  //   case 39: {
-  //     //right
-  //     gameState.player.body.x += 1;
-  //     break;
-  //   }
-  // }
-  // paintGame(gameState);
   socket.emit("keydown", e.keyCode);
 }
-
-init();
 
 function paintGame(state) {
   // console.log("paintGame");
@@ -79,7 +75,8 @@ function paintGame(state) {
 
   const size = state.gridsize;
 
-  paintPlayer(state.player, size, PLAYER_COLOR);
+  paintPlayer(state.players[0], size, PLAYER_COLOR);
+  paintPlayer(state.players[1], size, "red");
 }
 
 function paintPlayer(playerState, size, color) {
@@ -96,4 +93,8 @@ function handleGameState(gameState) {
   gameState = JSON.parse(gameState);
 
   paintGame(gameState);
+}
+
+function handleGameCode(gameCode) {
+  gameCodeDisplay.innerText = gameCode;
 }
